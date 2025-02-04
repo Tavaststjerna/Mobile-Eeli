@@ -1,32 +1,30 @@
 package com.example.homework1
 
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.homework1.ui.theme.Homework1Theme
-import androidx.compose.foundation.clickable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
+import com.example.homework1.ui.theme.Homework1Theme
 
 data class Message(val author: String, val body: String)
 
@@ -35,13 +33,71 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             Homework1Theme {
-                Conversation(SampleData.conversationSample)
+                val navController = rememberNavController()
+                NavHost(navController = navController, startDestination = "Viestit") {
+                    composable("Viestit") { HomeScreen(navController) } //ykkös näyttö
+                    composable("Asetukset") { SecondScreen(navController) } // kaakkos näyttö
                 }
             }
         }
     }
+}
+
+@Composable
+fun HomeScreen(navController: NavController) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(text = "Viestit", style = MaterialTheme.typography.headlineMedium)
+        Button(onClick = { navController.navigate("Asetukset") },
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text("Asetukset")
+        }
+        Conversation(SampleData.conversationSample)
+    }
+}
+
+// toinen näkymä
+@Composable
+fun SecondScreen(navController: NavController) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "Asetukset",
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(16.dp)
+        )
+
+        Button(
+            onClick = {
+                navController.navigate("viestit") {
+                    popUpTo("viestit") { inclusive = true }
+                }
+            },
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text("Keskustelut")
+        }
+    }
+}
 
 
+@Composable
+fun Conversation(messages: List<Message>) {
+    LazyColumn {
+        items(messages) { message ->
+            MessageCard(message)
+        }
+    }
+}
+
+// viestit
 @Composable
 fun MessageCard(msg: Message) {
     Row(modifier = Modifier.padding(all = 8.dp)) {
@@ -55,12 +111,13 @@ fun MessageCard(msg: Message) {
         )
 
         Spacer(modifier = Modifier.width(8.dp))
+
         var isExpanded by remember { mutableStateOf(false) }
         val surfaceColor by animateColorAsState(
             if (isExpanded) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
         )
 
-        Column (modifier = Modifier.clickable { isExpanded = !isExpanded }){
+        Column(modifier = Modifier.clickable { isExpanded = !isExpanded }) {
             Text(
                 text = msg.author,
                 color = MaterialTheme.colorScheme.secondary,
@@ -83,39 +140,6 @@ fun MessageCard(msg: Message) {
                 )
             }
         }
-    }
-}
-
-@Preview(name = "Light Mode")
-@Preview(
-    uiMode = Configuration.UI_MODE_NIGHT_YES,
-    showBackground = true,
-    name = "Dark Mode"
-)
-@Composable
-fun PreviewMessageCard() {
-    Homework1Theme{
-        Surface {
-            MessageCard(
-                msg = Message("Lexi", "Hey, take a look at Jetpack Compose, it's great!")
-            )
-        }
-    }
-}
-@Composable
-fun Conversation(messages: List<Message>) {
-    LazyColumn {
-        items(messages) { message ->
-            MessageCard(message)
-        }
-    }
-}
-
-@Preview
-@Composable
-fun PreviewConversation() {
-    Homework1Theme {
-        Conversation(SampleData.conversationSample)
     }
 }
 
