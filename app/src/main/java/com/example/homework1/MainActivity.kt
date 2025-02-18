@@ -49,17 +49,33 @@ import java.io.InputStream
 import java.io.IOException
 import com.example.homework1.ui.theme.Homework1Theme
 import com.example.homework1.Message
-
-
-
-
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Intent
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 
 val Context.dataStore by preferencesDataStore(name = "user_prefs")
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        //ilmoitus kanava
+        NotificationHelper.createNotificationChannel(this)
 
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
+            }
+        }
+
+        //sensorit käyttöön
+        val serviceIntent = Intent(this, SensorService::class.java)
+        startService(serviceIntent)
+        Log.d("ServiceDebug", "SensorService käynnistetty!")
 
         setContent {
             Homework1Theme {
@@ -71,10 +87,10 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+}
 
 
-    data class Message(val author: String, val body: String)
-//kotinäkymä eli viestit osuus. Oletuksena ilman profiliikuvaa ja nimenä denho.
+    //kotinäkymä eli viestit osuus. Oletuksena ilman profiliikuvaa ja nimenä denho.
     @Composable
     fun HomeScreen(navController: NavController) {
         Log.d("NavigationDebug", "🔹 Avattiin: Viestit")
@@ -113,7 +129,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-// "asetukset" näkymä mahdollisuus vaihtaa nimeä sekä profiilikuvaa
+    // "asetukset" näkymä mahdollisuus vaihtaa nimeä sekä profiilikuvaa
     @Composable
     fun SecondScreen(navController: NavController) {
         Log.d("NavigationDebug", "🔹 Avattiin: Asetukset")
@@ -123,19 +139,24 @@ class MainActivity : ComponentActivity() {
         val userName = remember { mutableStateOf(loadUserName(context)) }
         val imageUri = remember { mutableStateOf(loadImageUri(context)) }
 
-        val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-            uri?.let {
-                imageUri.value = saveImageToInternalStorage(context, it)
-                saveImageUri(context, imageUri.value!!)
+        val imagePicker =
+            rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+                uri?.let {
+                    imageUri.value = saveImageToInternalStorage(context, it)
+                    saveImageUri(context, imageUri.value!!)
+                }
             }
-        }
 
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(text = "Asetukset", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(16.dp))
+            Text(
+                text = "Asetukset",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(16.dp)
+            )
 
             // Profiilikuvan tai tyhjän ympyrän näyttäminen
             if (imageUri.value != null) {
@@ -252,44 +273,41 @@ class MainActivity : ComponentActivity() {
     }
 
 
-
-
-fun saveUserName(context: Context, name: String) {
-    runBlocking {
-        context.dataStore.edit { prefs ->
-            prefs[stringPreferencesKey("user_name")] = name
+    fun saveUserName(context: Context, name: String) {
+        runBlocking {
+            context.dataStore.edit { prefs ->
+                prefs[stringPreferencesKey("user_name")] = name
+            }
         }
     }
-}
 
-fun loadUserName(context: Context): String {
+    fun loadUserName(context: Context): String {
     return runBlocking {
-        context.dataStore.data.first()[stringPreferencesKey("user_name")] ?: "denho"
-    }
-}
-
-fun saveImageUri(context: Context, uri: Uri) {
-    runBlocking {
-        context.dataStore.edit { prefs ->
-            prefs[stringPreferencesKey("image_uri")] = uri.toString()
+        context.dataStore.data.first()[stringPreferencesKey("user_name")] ?: "eeli"
         }
     }
-}
 
-fun loadImageUri(context: Context): Uri? {
-    return runBlocking {
-        context.dataStore.data.first()[stringPreferencesKey("image_uri")]?.let { Uri.parse(it) }
+    fun saveImageUri(context: Context, uri: Uri) {
+        runBlocking {
+            context.dataStore.edit { prefs ->
+                prefs[stringPreferencesKey("image_uri")] = uri.toString()
+            }
+        }
     }
-}
 
-fun saveImageToInternalStorage(context: Context, uri: Uri): Uri {
-    val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
-    val file = File(context.filesDir, "selected_image.jpg")
-    val outputStream = FileOutputStream(file)
-    inputStream?.copyTo(outputStream)
-    inputStream?.close()
-    outputStream.close()
-    return Uri.fromFile(file)
-}
-}
+    fun loadImageUri(context: Context): Uri? {
+        return runBlocking {
+            context.dataStore.data.first()[stringPreferencesKey("image_uri")]?.let { Uri.parse(it) }
+        }
+    }
+
+    fun saveImageToInternalStorage(context: Context, uri: Uri): Uri {
+        val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
+        val file = File(context.filesDir, "selected_image.jpg")
+        val outputStream = FileOutputStream(file)
+        inputStream?.copyTo(outputStream)
+        inputStream?.close()
+        outputStream.close()
+        return Uri.fromFile(file)
+    }
 
