@@ -1,5 +1,7 @@
 package com.example.homework1
 
+import com.example.homework1.Message
+
 /**
  * SampleData for Jetpack Compose Tutorial 
  */
