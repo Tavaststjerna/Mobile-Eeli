@@ -60,8 +60,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Kopioidaan reissu.jpg sisäiseen tallennustilaan, jos sitä ei vielä ole
-        copyDefaultImageToStorage(this)
 
         setContent {
             Homework1Theme {
@@ -76,7 +74,7 @@ class MainActivity : ComponentActivity() {
 
 
     data class Message(val author: String, val body: String)
-
+//kotinäkymä eli viestit osuus. Oletuksena ilman profiliikuvaa ja nimenä denho.
     @Composable
     fun HomeScreen(navController: NavController) {
         Log.d("NavigationDebug", "🔹 Avattiin: Viestit")
@@ -88,7 +86,7 @@ class MainActivity : ComponentActivity() {
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // **Ratas-kuvake asetusten avaamiseen**
+            // Ratas asetusten avaamiseen
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -106,7 +104,7 @@ class MainActivity : ComponentActivity() {
 
             Text(text = "Viestit", style = MaterialTheme.typography.headlineMedium)
 
-            // **Näytetään viestit**
+            // viestit
             LazyColumn {
                 items(SampleData.conversationSample) { message ->
                     MessageCard(msg = Message(userName, message.body), imageUri)
@@ -115,13 +113,13 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-
+// "asetukset" näkymä mahdollisuus vaihtaa nimeä sekä profiilikuvaa
     @Composable
     fun SecondScreen(navController: NavController) {
         Log.d("NavigationDebug", "🔹 Avattiin: Asetukset")
         val context = LocalContext.current
 
-        // 🔹 Ladataan tallennettu nimi ja profiilikuva
+        // Ladataan tallennettu nimi ja profiilikuva
         val userName = remember { mutableStateOf(loadUserName(context)) }
         val imageUri = remember { mutableStateOf(loadImageUri(context)) }
 
@@ -139,7 +137,7 @@ class MainActivity : ComponentActivity() {
         ) {
             Text(text = "Asetukset", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(16.dp))
 
-            // 🔹 Profiilikuvan tai tyhjän ympyrän näyttäminen
+            // Profiilikuvan tai tyhjän ympyrän näyttäminen
             if (imageUri.value != null) {
                 Image(
                     painter = rememberAsyncImagePainter(imageUri.value),
@@ -168,7 +166,7 @@ class MainActivity : ComponentActivity() {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 🔹 Käyttäjänimen muokkaus
+            //  Käyttäjänimen muokkaus
             OutlinedTextField(
                 value = userName.value,
                 onValueChange = { userName.value = it },
@@ -179,8 +177,8 @@ class MainActivity : ComponentActivity() {
 
             Button(
                 onClick = {
-                    saveUserName(context, userName.value)  // ✅ Tallennetaan nimi
-                    navController.navigate("Viestit")     // ✅ Palataan takaisin
+                    saveUserName(context, userName.value)  //  Tallennetaan nimi
+                    navController.navigate("Viestit")     //  Palataan takaisin viesteihin
                 },
                 modifier = Modifier.padding(16.dp)
             ) {
@@ -192,15 +190,15 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun MessageCard(msg: Message, imageUri: Uri?) {
-        var isExpanded by remember { mutableStateOf(false) }  // ✅ Pitää kirjaa viestin tilasta
+        var isExpanded by remember { mutableStateOf(false) }
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(8.dp)
-                .clickable { isExpanded = !isExpanded }  // ✅ Klikkaamalla viesti aukeaa/sulkeutuu
+                .clickable { isExpanded = !isExpanded }  // Klikkaamalla viesti aukeaa/sulkeutuu
         ) {
-            // **Näytetään profiilikuva tai tyhjä ympyrä**
+
             if (imageUri != null) {
                 Image(
                     painter = rememberAsyncImagePainter(imageUri),
@@ -242,10 +240,10 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.padding(1.dp)
                 ) {
                     Text(
-                        text = if (isExpanded) msg.body else msg.body.take(50) + "...", // ✅ Näyttää lyhyen version, jos ei klikattu
+                        text = if (isExpanded) msg.body else msg.body.take(50) + "...",
                         modifier = Modifier
                             .padding(8.dp)
-                            .animateContentSize(), // ✅ Sulava animaatio avattaessa/suljettaessa
+                            .animateContentSize(),
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -255,7 +253,7 @@ class MainActivity : ComponentActivity() {
 
 
 
-    // **Tietojen tallennus ja lataus**
+
 fun saveUserName(context: Context, name: String) {
     runBlocking {
         context.dataStore.edit { prefs ->
@@ -293,22 +291,5 @@ fun saveImageToInternalStorage(context: Context, uri: Uri): Uri {
     outputStream.close()
     return Uri.fromFile(file)
 }
-
-    fun copyDefaultImageToStorage(context: Context) {
-        val file = File(context.filesDir, "reissu.jpg")
-        if (!file.exists()) {
-            try {
-                context.assets.open("reissu.jpg").use { inputStream ->
-                    FileOutputStream(file).use { outputStream ->
-                        inputStream.copyTo(outputStream)
-                    }
-                }
-                Log.d("FileCopy", "✅ reissu.jpg kopioitu sisäiseen tallennustilaan")
-            } catch (e: IOException) {
-                Log.e("FileCopy", "❌ Virhe kopioidessa reissu.jpg: ${e.message}")
-            }
-        }
-    }
-
 }
 
